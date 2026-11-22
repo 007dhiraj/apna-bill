@@ -84,7 +84,7 @@ function activate(which){[home,bill,st,lg,hs].forEach(x=>x.classList.remove('act
 let nav=document.createElement('nav');nav.className='app-nav';nav.innerHTML='<button data-target="apna-home-screen">⌂<br>Home</button><button data-target="apna-bill-screen">＋<br>Bill</button><button data-target="apna-stock-screen">▣<br>Stock</button><button data-target="apna-ledger-screen">₹<br>Ledger</button><button data-target="apna-history-screen">▤<br>History</button>';document.body.append(nav);
 nav.querySelectorAll('button').forEach(b=>b.onclick=()=>activate(document.getElementById(b.dataset.target)));
 dashboard.querySelectorAll('button').forEach(b=>b.onclick=()=>{activate(bill);setStep(0)});
-document.getElementById('addItem')?.addEventListener('click',()=>setStep(1));
+document.getElementById('addItem')?.addEventListener('click',()=>{const before=cart.length;setTimeout(()=>{if(cart.length>before){itemEntry.classList.remove('open');}},0);});
 document.getElementById('save')?.addEventListener('click',()=>{setTimeout(()=>activate(hs),300)});
 activate(home);
 })();
