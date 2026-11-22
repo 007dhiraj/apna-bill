@@ -234,7 +234,7 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
  }
  // Wrap preview function to retain the selected bill and add a return-to-list control.
  const originalPreview=preview?preview.innerHTML:null;
- const prevFn=window.preview; // preview is lexical in this file; expose via helper by wrapping global render when available.
+ window.__apnaPreviewBill=b=>preview(b);
  if(preview){const observer=new MutationObserver(()=>{preview.style.display='block';});observer.observe(preview,{childList:true,subtree:true});}
  // Compact, clean dashboard: remove noisy 3-column metrics and show two metrics only.
  const home=$('apna-home-screen'),dash=home?.querySelector('.grid');if(dash){dash.innerHTML='<div class="dash-stat"><span>Total Sales</span><strong id="polishSales">₹0</strong></div><div class="dash-stat"><span>Bills</span><strong id="polishCount">0</strong></div>';}
