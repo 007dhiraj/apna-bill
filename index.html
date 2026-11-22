@@ -108,7 +108,7 @@ let itemForm=itemEntry.querySelector('.item-entry-card');
 itemEntry.querySelector('#itemBack').onclick=()=>itemEntry.classList.remove('open');
 const addItemsBtn=document.createElement('button');addItemsBtn.id='openItemEntry';addItemsBtn.textContent='+ Add Items';items.insertBefore(addItemsBtn,items.firstChild);addItemsBtn.onclick=()=>{itemEntry.classList.add('open');$('itemName')?.focus()};
 bill.append(details,items,summary);bill.append(itemEntry);
-function activate(which){[home,bill,st,lg,hs].forEach(x=>x.classList.remove('active'));which.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.target===which.id));window.scrollTo(0,0)}
+function activate(which){document.querySelectorAll('.app-screen').forEach(x=>x.classList.remove('active'));[home,bill,st,lg,hs].forEach(x=>x.classList.remove('active'));which.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.target===which.id));window.scrollTo(0,0)}
 let nav=document.createElement('nav');nav.className='app-nav';nav.innerHTML='<button data-target="apna-home-screen">⌂<br>Home</button><button data-target="apna-bill-screen">＋<br>Bill</button><button data-target="apna-stock-screen">▣<br>Stock</button><button data-target="apna-ledger-screen">₹<br>Ledger</button><button data-target="apna-history-screen">▤<br>History</button>';document.body.append(nav);
 nav.querySelectorAll('button').forEach(b=>b.onclick=()=>activate(document.getElementById(b.dataset.target)));
 dashboard.querySelectorAll('button').forEach(b=>b.onclick=()=>activate(bill));
