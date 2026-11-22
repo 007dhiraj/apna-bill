@@ -3,7 +3,10 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#123c6a"><title>Apna Bill — Billing Demo</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f2f5f9;color:#172334;font:15px system-ui}header{background:linear-gradient(120deg,#123c6a,#1976b9);color:white;padding:18px 16px}header h1{margin:0;font-size:24px}header p{margin:5px 0 0;color:#dbeafe}main{max-width:1000px;margin:auto;padding:14px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{background:white;border-radius:16px;padding:16px;box-shadow:0 2px 14px #14264f0d;margin-bottom:12px}.stat{font-size:12px;color:#64748b}.statval{font-size:23px;font-weight:700;margin-top:5px}h2{font-size:18px;margin:0 0 12px}label{font-size:13px;color:#526175;display:block}input,select,button{font:inherit;border-radius:10px;padding:10px;border:1px solid #cbd5e1;background:white;width:100%;margin:4px 0 8px}button{border:0;background:#1768ad;color:white;font-weight:600;cursor:pointer}button.secondary{background:#e7f0fa;color:#144c7e}button.danger{background:#fee2e2;color:#991b1b}.row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.itemrow{display:grid;grid-template-columns:2fr .7fr 1fr auto;gap:6px;align-items:center}.itemrow button{padding:8px;margin:0}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{text-align:left;padding:8px;border-bottom:1px solid #e6edf5}.table th{color:#66758a}.totals{max-width:360px;margin-left:auto}.totals div{display:flex;justify-content:space-between;padding:5px}.total{font-size:20px;font-weight:800;border-top:1px solid #ccd7e4;padding-top:8px}.muted{font-size:12px;color:#64748b}.bill-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.hide{display:none}@media(max-width:650px){.grid{grid-template-columns:1fr}.itemrow{grid-template-columns:1fr .7fr 1fr auto}.card{padding:13px}.table{font-size:12px}}@media print{body{background:white}header,.no-print,.grid,.recent{display:none!important}main{max-width:none;padding:0}.card{box-shadow:none;border:0;padding:0}#invoicePreview{display:block!important}}
-</style></head>
+<style>
+/* Mobile-first separated screens */
+body{padding-bottom:72px}main{padding-bottom:90px}.app-screen{display:none}.app-screen.active{display:block}.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e1e7ef;display:flex;justify-content:space-around;padding:7px 2px calc(7px + env(safe-area-inset-bottom));z-index:9}.app-nav button{background:transparent;color:#64748b;flex:1;width:auto;padding:6px 2px;margin:0;font-size:11px}.app-nav button.active{color:#1768ad;font-weight:800}.subcard{background:white;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px #14264f0b}.subcard h2{margin:0 0 12px}.screen-title{font-size:20px;font-weight:750;margin:8px 2px 14px}.step-nav{display:flex;gap:6px;margin-bottom:12px}.step-nav button{flex:1;padding:8px;font-size:12px;background:#e6edf5;color:#5c6d81}.step-nav button.active{background:#1768ad;color:white}.screen-hide{display:none!important}@media print{.app-nav,.screen-title,.step-nav{display:none!important}.app-screen{display:none!important}#apna-summary-screen{display:block!important}}
+</style></style></head>
 <body><header><h1>Apna Bill</h1><p>Simple billing for your business · Demo version</p></header><main>
 <section class="grid"><div class="card"><div class="stat">Sales recorded (demo)</div><div class="statval" id="sales">₹0</div></div><div class="card"><div class="stat">Bills saved</div><div class="statval" id="billCount">0</div></div><div class="card"><div class="stat">Last bill amount</div><div class="statval" id="lastBill">₹0</div></div></section>
 <section class="card no-print"><h2>Create invoice</h2><div class="row"><div><label>Business / Shop name</label><input id="shop" placeholder="Your business name"></div><div><label>Customer</label><input id="customer" placeholder="Customer name"></div></div><div class="row"><div><label>Invoice number</label><input id="invoiceNo"></div><div><label>Date</label><input id="date" type="date"></div></div>
@@ -39,4 +42,32 @@ $('recordPayment').onclick=()=>{let name=$('payCustomer').value.trim(),amount=Nu
 const oldRender=render;render=function(){oldRender();let outstanding=Object.values(ledgerData).reduce((a,b)=>a+Number(b||0),0);$('billCount').textContent=invoices.length;drawCatalog()};
 $('export').onclick=()=>{let backup={invoices,catalog,ledgerData,payments,purchases};let blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='apna-bill-local-backup.json';a.click();URL.revokeObjectURL(url)};
 drawCatalog();
+</script><script>
+(function(){
+const invoice=document.querySelector('section.card.no-print');if(!invoice)return;
+const main=document.querySelector('main'),dashboard=main.querySelector('.grid'),preview=document.getElementById('invoicePreview'),stock=Array.from(main.children).find(s=>s.textContent.includes('Inventory & Purchases')),ledger=Array.from(main.children).find(s=>s.textContent.includes('Credit / Receivables')),history=Array.from(main.children).find(s=>s.textContent.includes('Recent saved bills'));
+function screen(id,title){let s=document.createElement('section');s.className='app-screen';s.id=id;let h=document.createElement('div');h.className='screen-title';h.textContent=title;s.append(h);main.append(s);return s}
+let home=screen('apna-home-screen','Dashboard'),bill=screen('apna-bill-screen','Create Bill'),st=screen('apna-stock-screen','Inventory & Purchases'),lg=screen('apna-ledger-screen','Customer Ledger'),hs=screen('apna-history-screen','Bill History');
+dashboard.classList.add('subcard');home.append(dashboard);if(history)hs.append(history);
+if(stock)st.append(stock);if(ledger)lg.append(ledger);
+invoice.classList.add('screen-hide');let details=document.createElement('div'),items=document.createElement('div'),summary=document.createElement('div');
+details.className='subcard';items.className='subcard';summary.className='subcard';
+details.innerHTML='<h2>Bill details</h2>';items.innerHTML='<h2>Add items</h2>';summary.innerHTML='<h2>Bill total & payment</h2>';
+let detailIds=['shop','customer','invoiceNo','date'],itemIds=['itemName','itemSuggestions','qty','rate','addItem','cart'],summaryIds=['discount','charges','gst','payment','totals','save','print'];
+const labelFor=id=>{let el=document.getElementById(id);let p=el?.previousElementSibling;return p&&p.tagName==='LABEL'?p:null};
+detailIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)details.append(l);if(e)details.append(e)});
+itemIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)items.append(l);if(e)items.append(e)});
+summaryIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)summary.append(l);if(e)summary.append(e)});
+bill.append(details,items,summary);
+let stepbar=document.createElement('div');stepbar.className='step-nav';stepbar.innerHTML='<button data-step="details">1 · Details</button><button data-step="items">2 · Items</button><button data-step="summary">3 · Total</button>';bill.insertBefore(stepbar,bill.children[1]);
+function setStep(n){[details,items,summary].forEach((x,i)=>x.classList.toggle('screen-hide',i!==n));stepbar.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===n));if(n===2&&window.drawSummary)window.drawSummary()}
+stepbar.querySelectorAll('button').forEach((b,i)=>b.onclick=()=>setStep(i));setStep(0);
+function activate(which){[home,bill,st,lg,hs].forEach(x=>x.classList.remove('active'));which.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.target===which.id));window.scrollTo(0,0)}
+let nav=document.createElement('nav');nav.className='app-nav';nav.innerHTML='<button data-target="apna-home-screen">⌂<br>Home</button><button data-target="apna-bill-screen">＋<br>Bill</button><button data-target="apna-stock-screen">▣<br>Stock</button><button data-target="apna-ledger-screen">₹<br>Ledger</button><button data-target="apna-history-screen">▤<br>History</button>';document.body.append(nav);
+nav.querySelectorAll('button').forEach(b=>b.onclick=()=>activate(document.getElementById(b.dataset.target)));
+dashboard.querySelectorAll('button').forEach(b=>b.onclick=()=>{activate(bill);setStep(0)});
+document.getElementById('addItem')?.addEventListener('click',()=>setStep(1));
+document.getElementById('save')?.addEventListener('click',()=>{setTimeout(()=>activate(hs),300)});
+activate(home);
+})();
 </script></body></html>
