@@ -203,4 +203,33 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
 .autocomplete-box{position:relative;z-index:25;background:#fff;border:1px solid #ccd8e4;border-radius:10px;max-height:220px;overflow:auto;margin:2px 0 10px;box-shadow:0 5px 16px #16344d18}
 .autocomplete-box:empty{display:none}.autocomplete-box button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #edf1f5;background:white;color:#172b43;padding:12px;font-size:15px}
 #itemEntryOverlay #saveItemAndNew,#itemEntryOverlay #addItem{display:block!important;visibility:visible!important;opacity:1!important}
+</style><script>
+(function(){
+ const main=document.querySelector('main'),lg=document.getElementById('apna-ledger-screen');
+ if(!lg)return;
+ // Customer balances and statement UI based on saved local invoices/payment records.
+ const panel=document.createElement('section');panel.className='subcard';panel.id='customerBook';
+ panel.innerHTML='<h2>Customers & Balances</h2><input id="partySearch" placeholder="Search customer name"><div id="partyList"></div><div id="partyDetail"></div>';
+ lg.prepend(panel);
+ const $=id=>document.getElementById(id),escx=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function balanceFor(n){return invoices.filter(b=>b.customer===n&&b.payment==='Credit').reduce((s,b)=>s+Number(b.total||0),0)-payments.filter(p=>p.customer===n).reduce((s,p)=>s+Number(p.amount||0),0);}
+ function allParties(){return [...new Set([...invoices.map(b=>b.customer||''),...Object.keys(ledgerData||{}),...payments.map(p=>p.customer||'')].map(x=>x.trim()).filter(Boolean))].sort();}
+ function statement(n){const bills=invoices.filter(b=>b.customer===n),pays=payments.filter(p=>p.customer===n);return {bills,pays,balance:balanceFor(n)}}
+ function showParty(n){const d=statement(n);$('partyDetail').innerHTML='<div class="party-detail"><h3>'+escx(n)+'</h3><div class="party-actions"><b>Outstanding: '+money(Math.max(0,d.balance))+'</b><button id="sendStatement" class="secondary">View / Print Statement</button></div><div class="party-transactions">'+d.bills.map(b=>'<div class="party-row"><span>Sale · '+escx(b.id)+' · '+escx(b.date)+'</span><b>'+money(b.total)+'</b></div>').join('')+d.pays.map(p=>'<div class="party-row"><span>Payment received · '+escx(new Date(p.date).toLocaleDateString())+'</span><b>- '+money(p.amount)+'</b></div>').join('')+'</div>';
+  $('sendStatement').onclick=()=>{const rows=[...d.bills.map(b=>({date:b.date,desc:'Sale '+b.id,amount:b.total})),...d.pays.map(p=>({date:new Date(p.date).toLocaleDateString(),desc:'Payment received',amount:-p.amount}))].sort((a,b)=>new Date(a.date)-new Date(b.date));const w=window.open('','_blank');if(!w){alert('Allow pop-ups to view statement.');return;}w.document.write('<html><head><title>Statement '+escx(n)+'</title><style>body{font-family:Arial;padding:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}</style></head><body><h2>Account Statement: '+escx(n)+'</h2><table><tr><th>Date</th><th>Details</th><th>Amount</th></tr>'+rows.map(r=>'<tr><td>'+escx(r.date)+'</td><td>'+escx(r.desc)+'</td><td>'+money(r.amount)+'</td></tr>').join('')+'</table><h3>Balance Due: '+money(Math.max(0,d.balance))+'</h3><button onclick="print()">Print / Save PDF</button></body></html>');w.document.close();};
+ }
+ function drawParties(filter=''){const list=allParties().filter(n=>n.toLowerCase().includes(filter.toLowerCase()));$('partyList').innerHTML=list.map(n=>'<button class="party-list-row" data-party="'+encodeURIComponent(n)+'"><span>'+escx(n)+'</span><b>'+money(Math.max(0,balanceFor(n)))+'</b></button>').join('')||'<p class="muted">Saved customers will appear here after their bills are saved.</p>';document.querySelectorAll('[data-party]').forEach(b=>b.onclick=()=>showParty(decodeURIComponent(b.dataset.party)));}
+ $('partySearch').oninput=()=>drawParties($('partySearch').value);drawParties();
+ const oldSave=$('save').onclick;
+ $('save').onclick=()=>{oldSave?.();setTimeout(()=>{drawParties();if($('customer').value.trim())showParty($('customer').value.trim());},150)};
+ const oldPayment=$('recordPayment').onclick;
+ $('recordPayment').onclick=()=>{oldPayment?.();setTimeout(()=>drawParties(),100)};
+})();
+</script>
+<style id="customer-book-style">
+#customerBook{margin-bottom:14px}#partyList{margin-top:10px}
+.party-list-row{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;margin:4px 0;background:#f8fafc;color:#243447;border:1px solid #e2e8f0;padding:12px;border-radius:10px}
+.party-detail{margin-top:12px;padding:12px;border:1px solid #dce4ec;border-radius:12px}
+.party-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.party-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e8edf3;padding:10px 0}
 </style></body></html>
