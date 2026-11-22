@@ -63,21 +63,23 @@ drawCatalog();
 const invoice=document.querySelector('section.card.no-print');if(!invoice)return;
 const main=document.querySelector('main'),dashboard=main.querySelector('.grid'),preview=document.getElementById('invoicePreview'),stock=Array.from(main.children).find(s=>s.textContent.includes('Inventory & Purchases')),ledger=Array.from(main.children).find(s=>s.textContent.includes('Credit / Receivables')),history=Array.from(main.children).find(s=>s.textContent.includes('Recent saved bills'));
 function screen(id,title){let s=document.createElement('section');s.className='app-screen';s.id=id;let h=document.createElement('div');h.className='screen-title';h.textContent=title;s.append(h);main.append(s);return s}
-let home=screen('apna-home-screen','Dashboard'),bill=screen('apna-bill-screen','Create Bill'),st=screen('apna-stock-screen','Inventory & Purchases'),lg=screen('apna-ledger-screen','Customer Ledger'),hs=screen('apna-history-screen','Bill History');
+let home=screen('apna-home-screen','Dashboard'),bill=screen('apna-bill-screen','Sale'),st=screen('apna-stock-screen','Inventory & Purchases'),lg=screen('apna-ledger-screen','Customer Ledger'),hs=screen('apna-history-screen','Bill History');
 dashboard.classList.add('subcard');home.append(dashboard);if(history)hs.append(history);
 if(stock)st.append(stock);if(ledger)lg.append(ledger);
 invoice.classList.add('screen-hide');let details=document.createElement('div'),items=document.createElement('div'),summary=document.createElement('div');
-details.className='subcard';items.className='subcard';summary.className='subcard';
-details.innerHTML='<h2>Bill details</h2>';items.innerHTML='<h2>Add items</h2>';summary.innerHTML='<h2>Bill total & payment</h2>';
-let detailIds=['shop','customer','invoiceNo','date'],itemIds=['itemName','itemSuggestions','qty','rate','addItem','cart'],summaryIds=['discount','charges','gst','payment','totals','save','print'];
+details.className='subcard bill-section';items.className='subcard bill-section';summary.className='subcard bill-section';
+details.innerHTML='<h2>Sale details</h2>';items.innerHTML='<h2>Items</h2>';summary.innerHTML='<h2>Discount & Charges</h2>';
+let detailIds=['customer','invoiceNo','date'],itemIds=['cart'],summaryIds=['discount','charges','gst','payment','totals','save','print'];
 const labelFor=id=>{let el=document.getElementById(id);let p=el?.previousElementSibling;return p&&p.tagName==='LABEL'?p:null};
 detailIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)details.append(l);if(e)details.append(e)});
-itemIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)items.append(l);if(e)items.append(e)});
+itemIds.forEach(id=>{let e=document.getElementById(id);if(e)items.append(e)});
 summaryIds.forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)summary.append(l);if(e)summary.append(e)});
-bill.append(details,items,summary);
-let stepbar=document.createElement('div');stepbar.className='step-nav';stepbar.innerHTML='<button data-step="details">1 · Details</button><button data-step="items">2 · Items</button><button data-step="summary">3 · Total</button>';bill.insertBefore(stepbar,bill.children[1]);
-function setStep(n){[details,items,summary].forEach((x,i)=>x.classList.toggle('screen-hide',i!==n));stepbar.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('active',i===n));if(n===2&&window.drawSummary)window.drawSummary()}
-stepbar.querySelectorAll('button').forEach((b,i)=>b.onclick=()=>setStep(i));setStep(0);
+const itemEntry=document.createElement('div');itemEntry.id='itemEntryOverlay';itemEntry.innerHTML='<div class="item-entry-card"><div class="item-entry-head"><button type="button" id="itemBack" class="secondary">← Back to Sale</button><h2>Add Items to Sale</h2></div></div>';
+let itemForm=itemEntry.querySelector('.item-entry-card');
+['itemName','itemSuggestions','qty','rate','addItem'].forEach(id=>{let l=labelFor(id),e=document.getElementById(id);if(l)itemForm.append(l);if(e)itemForm.append(e)});
+itemEntry.querySelector('#itemBack').onclick=()=>itemEntry.classList.remove('open');
+const addItemsBtn=document.createElement('button');addItemsBtn.id='openItemEntry';addItemsBtn.textContent='+ Add Items';items.insertBefore(addItemsBtn,items.firstChild);addItemsBtn.onclick=()=>{itemEntry.classList.add('open');$('itemName')?.focus()};
+bill.append(details,items,summary);bill.append(itemEntry);
 function activate(which){[home,bill,st,lg,hs].forEach(x=>x.classList.remove('active'));which.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.target===which.id));window.scrollTo(0,0)}
 let nav=document.createElement('nav');nav.className='app-nav';nav.innerHTML='<button data-target="apna-home-screen">⌂<br>Home</button><button data-target="apna-bill-screen">＋<br>Bill</button><button data-target="apna-stock-screen">▣<br>Stock</button><button data-target="apna-ledger-screen">₹<br>Ledger</button><button data-target="apna-history-screen">▤<br>History</button>';document.body.append(nav);
 nav.querySelectorAll('button').forEach(b=>b.onclick=()=>activate(document.getElementById(b.dataset.target)));
