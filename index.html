@@ -6,7 +6,20 @@
 <style>
 /* Mobile-first separated screens */
 body{padding-bottom:72px}main{padding-bottom:90px}.app-screen{display:none}.app-screen.active{display:block}.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e1e7ef;display:flex;justify-content:space-around;padding:7px 2px calc(7px + env(safe-area-inset-bottom));z-index:9}.app-nav button{background:transparent;color:#64748b;flex:1;width:auto;padding:6px 2px;margin:0;font-size:11px}.app-nav button.active{color:#1768ad;font-weight:800}.subcard{background:white;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px #14264f0b}.subcard h2{margin:0 0 12px}.screen-title{font-size:20px;font-weight:750;margin:8px 2px 14px}.step-nav{display:flex;gap:6px;margin-bottom:12px}.step-nav button{flex:1;padding:8px;font-size:12px;background:#e6edf5;color:#5c6d81}.step-nav button.active{background:#1768ad;color:white}.screen-hide{display:none!important}@media print{.app-nav,.screen-title,.step-nav{display:none!important}.app-screen{display:none!important}#apna-summary-screen{display:block!important}}
-</style></style></head>
+</style></style><style id="sale-screen-redesign">
+.bill-section{margin-bottom:12px}.bill-section h2{font-size:17px}
+#apna-bill-screen .step-nav{display:none!important}
+#itemEntryOverlay{display:none;position:fixed;inset:0;background:#f2f5f9;z-index:30;overflow:auto;padding:12px}
+#itemEntryOverlay.open{display:block}
+.item-entry-card{max-width:700px;margin:0 auto;background:#fff;border-radius:18px;padding:16px;box-shadow:0 3px 20px #102f5014}
+.item-entry-head{position:sticky;top:0;background:#fff;z-index:1}.item-entry-head h2{padding:10px 0}
+#itemEntryOverlay #addItem{position:sticky;bottom:8px}
+#apna-bill-screen #shop{display:none!important}
+#apna-bill-screen #save{position:sticky;bottom:78px;z-index:2}
+#apna-bill-screen #print{display:none!important}
+#apna-bill-screen .totals{max-width:none}
+@media(max-width:650px){#apna-bill-screen .bill-section{padding:14px;border-radius:14px}#itemEntryOverlay{padding:8px}.item-entry-card{padding:13px}}
+</style></head>
 <body><style>
 #authGate{display:flex;min-height:100vh;background:#f2f5f9;align-items:center;justify-content:center;padding:18px}
 body:not(.auth-signed-in) header,body:not(.auth-signed-in) main,body:not(.auth-signed-in) .app-nav{display:none!important}body.auth-signed-in #authGate{display:none!important}
