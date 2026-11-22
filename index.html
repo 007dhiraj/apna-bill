@@ -7,7 +7,23 @@
 /* Mobile-first separated screens */
 body{padding-bottom:72px}main{padding-bottom:90px}.app-screen{display:none}.app-screen.active{display:block}.app-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e1e7ef;display:flex;justify-content:space-around;padding:7px 2px calc(7px + env(safe-area-inset-bottom));z-index:9}.app-nav button{background:transparent;color:#64748b;flex:1;width:auto;padding:6px 2px;margin:0;font-size:11px}.app-nav button.active{color:#1768ad;font-weight:800}.subcard{background:white;border-radius:15px;padding:15px;margin-bottom:12px;box-shadow:0 2px 12px #14264f0b}.subcard h2{margin:0 0 12px}.screen-title{font-size:20px;font-weight:750;margin:8px 2px 14px}.step-nav{display:flex;gap:6px;margin-bottom:12px}.step-nav button{flex:1;padding:8px;font-size:12px;background:#e6edf5;color:#5c6d81}.step-nav button.active{background:#1768ad;color:white}.screen-hide{display:none!important}@media print{.app-nav,.screen-title,.step-nav{display:none!important}.app-screen{display:none!important}#apna-summary-screen{display:block!important}}
 </style></style></head>
-<body><header><h1>Apna Bill</h1><p>Simple billing for your business · Demo version</p></header><main>
+<body><style>
+#authGate{display:none;min-height:100vh;background:#f2f5f9;align-items:center;justify-content:center;padding:18px}
+body.auth-required #authGate{display:flex}body.auth-required header,body.auth-required main,body.auth-required .app-nav{display:none!important}
+.auth-card{max-width:430px;width:100%;background:white;padding:24px;border-radius:20px;box-shadow:0 8px 30px #0f29451a}
+.auth-card h1{font-size:25px;color:#123c6a;margin:0 0 6px}.auth-card p{color:#617186;font-size:14px}
+.auth-card input{width:100%;margin:6px 0 10px}.auth-card button{width:100%;margin:7px 0}.auth-card .google{background:#fff;border:1px solid #d4dce7;color:#223248}.auth-card .note{font-size:12px;color:#77869a}.auth-error{color:#b42318;font-size:13px;min-height:20px}
+</style>
+<div id="authGate"><div class="auth-card">
+<h1>Apna Bill</h1><p>Sign in to continue to your billing dashboard.</p>
+<button id="googleSignIn" class="google">Continue with Google</button>
+<hr>
+<label>Mobile number</label><input id="authPhone" inputmode="tel" autocomplete="tel" placeholder="+91 98765 43210">
+<button id="sendOtp">Send OTP</button>
+<div id="otpSection" style="display:none"><label>6-digit OTP</label><input id="authOtp" inputmode="numeric" autocomplete="one-time-code" placeholder="Enter OTP"><button id="verifyOtp">Verify OTP & Sign in</button></div>
+<div id="recaptcha-container"></div><div id="authError" class="auth-error"></div>
+<p class="note">Phone sign-in uses Firebase verification. Your phone number must be verified to sign in.</p>
+</div></div><header><h1>Apna Bill</h1><p>Simple billing for your business · Demo version</p></header><main>
 <section class="grid"><div class="card"><div class="stat">Sales recorded (demo)</div><div class="statval" id="sales">₹0</div></div><div class="card"><div class="stat">Bills saved</div><div class="statval" id="billCount">0</div></div><div class="card"><div class="stat">Last bill amount</div><div class="statval" id="lastBill">₹0</div></div></section>
 <section class="card no-print"><h2>Create invoice</h2><div class="row"><div><label>Business / Shop name</label><input id="shop" placeholder="Your business name"></div><div><label>Customer</label><input id="customer" placeholder="Customer name"></div></div><div class="row"><div><label>Invoice number</label><input id="invoiceNo"></div><div><label>Date</label><input id="date" type="date"></div></div>
 <label>Item name</label><input id="itemName" placeholder="Product / service" list="itemSuggestions"><datalist id="itemSuggestions"></datalist><div class="row"><div><label>Qty</label><input id="qty" type="number" min="0.01" step="0.01" value="1"></div><div><label>Rate (₹)</label><input id="rate" type="number" min="0" step="0.01" value="0"></div></div>
@@ -87,4 +103,28 @@ activate(home);
  if(!profile){showSettings();alert('First time only: set up your business profile here. It will not be requested on every bill.');}
  const preview=q('invoicePreview');if(preview){new MutationObserver(()=>{if(!profile)return;const h=preview.querySelector('.bill-head h2');if(h)h.textContent=profile.name;const left=preview.querySelector('.bill-head>div');if(left){left.querySelectorAll('.profile-extra').forEach(x=>x.remove());let extra=[profile.phone,profile.address,profile.gst?'GSTIN: '+profile.gst:''].filter(Boolean).join(' · ');if(extra){let p=document.createElement('p');p.className='muted profile-extra';p.textContent=extra;left.append(p);}}}).observe(preview,{childList:true,subtree:true});}
 })();
+</script><script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, RecaptchaVerifier, signInWithPhoneNumber, signOut } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-auth.js";
+const firebaseConfig = {
+ apiKey: "AIzaSyDAqfuMSh6Sk3NKfEwrtiW-feY0CJbQnZk",
+ authDomain: "apna-bill-bfa00.firebaseapp.com",
+ projectId: "apna-bill-bfa00",
+ storageBucket: "apna-bill-bfa00.firebasestorage.app",
+ messagingSenderId: "538353681036",
+ appId: "1:538353681036:web:dfbc742fd99f85ea9eb1a9",
+ measurementId: "G-MP322T77K2"
+};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),gate=document.getElementById('authGate'),errorBox=document.getElementById('authError');
+let verifier=null,confirmation=null;
+function error(e){errorBox.textContent=e?.message||String(e)}
+function getVerifier(){if(!verifier){verifier=new RecaptchaVerifier(auth,'recaptcha-container',{size:'invisible'});}return verifier;}
+document.getElementById('googleSignIn').onclick=async()=>{errorBox.textContent='';try{await signInWithPopup(auth,new GoogleAuthProvider());}catch(e){if(e.code==='auth/popup-blocked'||e.code==='auth/popup-closed-by-user'){try{await signInWithRedirect(auth,new GoogleAuthProvider())}catch(x){error(x)}}else error(e)}};
+document.getElementById('sendOtp').onclick=async()=>{errorBox.textContent='';let phone=document.getElementById('authPhone').value.trim().replace(/[\\s()-]/g,'');if(/^\\d{10}$/.test(phone))phone='+91'+phone;if(!/^\\+[1-9]\\d{7,14}$/.test(phone)){errorBox.textContent='Enter a valid number with country code (e.g. +91).';return}try{confirmation=await signInWithPhoneNumber(auth,phone,getVerifier());document.getElementById('otpSection').style.display='block';errorBox.textContent='OTP sent. Check SMS.';}catch(e){error(e);try{verifier?.clear();verifier=null}catch{}}};
+document.getElementById('verifyOtp').onclick=async()=>{errorBox.textContent='';const code=document.getElementById('authOtp').value.trim();if(!confirmation||!/^\\d{6}$/.test(code)){errorBox.textContent='Enter the 6-digit OTP.';return}try{await confirmation.confirm(code)}catch(e){error(e)}};
+document.getElementById('logoutApnaBill')?.addEventListener('click',async()=>{await signOut(auth)});
+onAuthStateChanged(auth,user=>{document.body.classList.toggle('auth-required',!user);if(user){gate.style.display='none';document.body.classList.remove('auth-required');}else{gate.style.display='flex';document.body.classList.add('auth-required')}});
+try{await getRedirectResult(auth)}catch(e){error(e)}
+const settingsScreen=document.getElementById('apna-settings-screen');
+if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){let userInfo=document.createElement('p');userInfo.id='authUserInfo';userInfo.className='muted';userInfo.textContent='Signed in';box.append(userInfo);let logout=document.createElement('button');logout.id='logoutApnaBill';logout.className='secondary';logout.textContent='Sign out';box.append(logout);logout.onclick=()=>signOut(auth);onAuthStateChanged(auth,u=>{userInfo.textContent=u?'Signed in as '+(u.phoneNumber||u.email||'Firebase user'):'Not signed in';logout.style.display=u?'block':'none'})}}
 </script></body></html>
