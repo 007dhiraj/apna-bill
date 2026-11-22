@@ -270,4 +270,60 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
 .party-detail{margin-top:12px;padding:12px;border:1px solid #dce4ec;border-radius:12px}
 .party-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .party-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #e8edf3;padding:10px 0}
+</style><script id="vyapar-inspired-dashboard">
+(function(){
+ const $=id=>document.getElementById(id);
+ const home=$('apna-home-screen'), main=document.querySelector('main'), nav=document.querySelector('.app-nav');
+ if(!home||!nav)return;
+ const PARTY_KEY='apnaBillPartiesV1';
+ let partyData=JSON.parse(localStorage.getItem(PARTY_KEY)||'{}');
+ // Bring the existing party list and statement view onto the main home screen.
+ const book=$('customerBook');
+ if(book)home.append(book);
+ const oldTitle=home.querySelector('.screen-title');if(oldTitle)oldTitle.textContent='Business Dashboard';
+ const metrics=home.querySelector('.grid');
+ if(metrics)metrics.innerHTML='<div class="vy-metric get"><span>↓ You’ll Get</span><strong id="vyReceivable">₹0.00</strong></div><div class="vy-metric sale"><span>Sale (Today)</span><strong id="vyTodaySale">₹0.00</strong></div>';
+ const tabs=document.createElement('div');tabs.id='vyTabs';tabs.innerHTML='<button class="active" data-vytab="parties">Parties</button><button data-vytab="transactions">Transactions</button><button data-vytab="items">Items</button>';
+ const bookTitle=book?.querySelector('h2'); if(bookTitle)bookTitle.textContent='Parties';
+ const search=$('partySearch');if(search)search.placeholder='⌕  Search party';
+ const partyList=$('partyList');
+ const tabContent=document.createElement('div');tabContent.id='vyTabContent';
+ const newParty=document.createElement('button');newParty.id='vyNewParty';newParty.className='secondary';newParty.textContent='+ New Party';
+ const partyTop=document.createElement('div');partyTop.className='vy-party-top';partyTop.append(search,newParty);
+ if(book){book.insertBefore(tabs,bookTitle?.parentNode||book.firstChild);book.insertBefore(partyTop,partyList);book.append(tabContent);if(partyList)tabContent.append(partyList);const detail=$('partyDetail');if(detail)book.append(detail);}
+ const detail=$('partyDetail');
+ if(detail){const close=document.createElement('button');close.className='secondary';close.textContent='← Back to Parties';close.onclick=()=>{detail.innerHTML='';drawParties(search?.value||'')};detail.prepend(close);}
+ let activeTab='parties';
+ function setTab(t){activeTab=t;tabs.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.vytab===t));if(partyList)partyList.style.display=t==='parties'?'block':'none';if(search)search.style.display=t==='parties'?'block':'none';newParty.style.display=t==='parties'?'block':'none';if(t==='transactions'){tabContent.innerHTML='<div class="vy-trans-list">'+invoices.slice().map(b=>'<div class="vy-row"><div><b>'+esc(b.customer||'Walk-in')+'</b><small>'+esc(b.id)+' · '+esc(b.date||'')+'</small></div><strong>'+money(b.total)+'</strong></div>').join('')||'<p class="muted">No transactions saved.</p>'+'</div>';if(partyList)tabContent.append(partyList);}else if(t==='items'){tabContent.innerHTML='<div class="vy-item-list">'+Object.keys(catalog||{}).sort().map(n=>'<div class="vy-row"><div><b>'+esc(n)+'</b><small>Sale Price · '+money(catalog[n]?.rate||0)+'<br>Purchase Price · '+money(catalog[n]?.purchaseRate||0)+'</small></div></div>').join('')||'<p class="muted">No items saved yet.</p>'+'</div>';if(partyList)tabContent.append(partyList);}else if(partyList){tabContent.innerHTML='';tabContent.append(partyList);}}
+ tabs.querySelectorAll('button').forEach(b=>b.onclick=()=>setTab(b.dataset.vytab));
+ newParty.onclick=()=>{let n=prompt('Party / customer name');if(!n||!n.trim())return;n=n.trim();let phone=prompt('Mobile number (optional)')||'';partyData[n]={name:n,phone:phone.trim()};localStorage.setItem(PARTY_KEY,JSON.stringify(partyData));drawParties(search?.value||'');if(search)search.value='';};
+ const fab=document.createElement('div');fab.id='vyBottomActions';fab.innerHTML='<button id="vyTakePayment">Take Payment</button><button id="vyPlus" aria-label="Quick actions">＋</button><button id="vyAddSale">Add Sale</button>';home.append(fab);
+ $('vyTakePayment').onclick=()=>{document.querySelector('[data-target="apna-ledger-screen"]')?.click();$('payCustomer')?.focus();};
+ $('vyPlus').onclick=()=>{let choice=prompt('Quick action: type 1 for New Party, 2 for Add Item, 3 for Payment');if(choice==='1')newParty.click();if(choice==='2')document.querySelector('[data-target="apna-stock-screen"]')?.click();if(choice==='3')$('vyTakePayment').click();};
+ $('vyAddSale').onclick=()=>document.querySelector('[data-target="apna-bill-screen"]')?.click();
+ // Side-menu with section links matching the reference video's navigation drawer.
+ const drawer=document.createElement('div');drawer.id='vyDrawer';drawer.innerHTML='<div class="vy-drawer-head"><b>Apna Bill</b><button id="vyDrawerClose">×</button></div>'+[['Parties','apna-home-screen'],['Items','apna-stock-screen'],['Business Dashboard','apna-home-screen'],['Reports','apna-history-screen'],['Sale','apna-bill-screen'],['Purchase','apna-stock-screen'],['Expense','apna-ledger-screen'],['Settings','apna-settings-screen'],['Backup/Restore','apna-history-screen']].map(x=>'<button data-drawtarget="'+x[1]+'">'+x[0]+'</button>').join('');
+ const menuBtn=document.createElement('button');menuBtn.id='vyMenu';menuBtn.textContent='☰';home.querySelector('.screen-title')?.prepend(menuBtn);document.body.append(drawer);
+ menuBtn.onclick=()=>drawer.classList.add('open');$('vyDrawerClose').onclick=()=>drawer.classList.remove('open');drawer.querySelectorAll('[data-drawtarget]').forEach(b=>b.onclick=()=>{drawer.classList.remove('open');document.querySelector('[data-target="'+b.dataset.drawtarget+'"]')?.click();if(b.dataset.drawtarget==='apna-home-screen')setTab('parties');});
+ function metricsUpdate(){let receivable=Object.values(ledgerData||{}).reduce((s,x)=>s+Number(x||0),0);$('vyReceivable').textContent=money(receivable);let today=new Date().toISOString().slice(0,10);$('vyTodaySale').textContent=money(invoices.filter(b=>b.date===today).reduce((s,b)=>s+Number(b.total||0),0));}
+ const oldRender=render;render=function(){oldRender();metricsUpdate();refreshHistory?.();};
+ setTab('parties');metricsUpdate();
+})();
+</script>
+<style id="vyapar-inspired-dashboard-style">
+#apna-home-screen .screen-title{display:flex;align-items:center;gap:8px;margin:6px 0 12px}
+#vyMenu{width:40px;min-width:40px;margin:0;padding:7px;background:#fff;color:#26384a;border:1px solid #e4eaf1}
+#apna-home-screen .grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px;margin-bottom:12px}
+.vy-metric{border-radius:12px;padding:12px;background:#fff;border:1px solid #e6edf3;box-shadow:0 2px 8px #102f5008}
+.vy-metric span{font-size:12px;color:#65758a}.vy-metric strong{display:block;font-size:20px;margin-top:5px}.vy-metric.get strong,.vy-metric.get span{color:#16a578}.vy-metric.sale strong{color:#df7b17}
+#vyTabs{display:flex;gap:6px;margin:12px 0 10px}#vyTabs button{flex:1;background:#fff;color:#65758a;border:1px solid #dce4ed;border-radius:30px;padding:8px 4px;margin:0;font-size:12px}#vyTabs button.active{background:#fff0f3;color:#e72d50;border-color:#f04b69;font-weight:700}
+.vy-party-top{display:flex;gap:8px;align-items:center}.vy-party-top input{flex:1;margin:0}.vy-party-top button{width:auto;white-space:nowrap;margin:0;padding:9px 10px;font-size:12px}
+#customerBook h2{display:none}#customerBook #partyList{margin-top:8px}
+#partyList .party-list-row{background:#fff;border:0;border-bottom:1px solid #edf1f5;border-radius:0;padding:12px 5px;margin:0}
+#partyList .party-list-row span{font-size:14px;color:#26394b}#partyList .party-list-row b{color:#15a578;font-size:14px}
+#vyBottomActions{position:fixed;bottom:66px;left:0;right:0;display:flex;gap:10px;align-items:center;justify-content:space-around;padding:8px 12px;background:#fff;box-shadow:0 -2px 12px #132b4a10;z-index:8}
+#vyBottomActions button{margin:0;border-radius:30px;min-height:44px}#vyTakePayment{background:#1688e6;flex:1}#vyPlus{width:48px;min-width:48px;height:48px;border-radius:50%;background:#fff;color:#1688e6;border:2px solid #8fc6fa;font-size:24px;padding:0}#vyAddSale{background:#ef234b;flex:1}
+#vyDrawer{position:fixed;top:0;bottom:0;left:0;width:min(82vw,320px);background:#fff;z-index:50;box-shadow:8px 0 25px #0b223322;transform:translateX(-105%);transition:transform .2s;padding:12px;overflow:auto}#vyDrawer.open{transform:translateX(0)}.vy-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-bottom:1px solid #e6edf3}.vy-drawer-head button{width:40px;background:#eef3f8;color:#25364a}.#vyDrawer>button[data-drawtarget]{background:#fff;color:#33475b;border-bottom:1px solid #edf1f5;text-align:left;border-radius:0;padding:14px 10px}
+.vy-row{display:flex;justify-content:space-between;align-items:center;padding:12px 5px;border-bottom:1px solid #edf1f5}.vy-row small{display:block;color:#718096;font-size:11px;margin-top:4px}.vy-row strong{color:#16a578}
+@media(max-width:650px){#apna-home-screen .grid{grid-template-columns:1fr 1fr!important}.vy-metric strong{font-size:18px}#vyBottomActions{bottom:66px}}
 </style></body></html>
