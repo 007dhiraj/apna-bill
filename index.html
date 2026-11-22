@@ -157,4 +157,49 @@ onAuthStateChanged(auth,user=>{document.body.classList.toggle('auth-signed-in',!
 try{await getRedirectResult(auth)}catch(e){error(e)}
 const settingsScreen=document.getElementById('apna-settings-screen');
 if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){let userInfo=document.createElement('p');userInfo.id='authUserInfo';userInfo.className='muted';userInfo.textContent='Signed in';box.append(userInfo);let logout=document.createElement('button');logout.id='logoutApnaBill';logout.className='secondary';logout.textContent='Sign out';box.append(logout);logout.onclick=()=>signOut(auth);onAuthStateChanged(auth,u=>{userInfo.textContent=u?'Signed in as '+(u.phoneNumber||u.email||'Firebase user'):'Not signed in';logout.style.display=u?'block':'none'})}}
-</script></body></html>
+</script><script>
+// Repair the bill/item/customer controls after the UI panels are moved.
+(function(){
+ const $=id=>document.getElementById(id),overlay=$('itemEntryOverlay'),form=overlay?.querySelector('.item-entry-card');
+ if(!overlay||!form)return;
+ // Put both actions visibly inside the item entry screen.
+ let saveNew=$('saveItemAndNew');if(saveNew)saveNew.remove();
+ $('addItem').textContent='Save Item';
+ if(saveNew){$('addItem').insertAdjacentElement('afterend',saveNew);}
+ else{saveNew=document.createElement('button');saveNew.id='saveItemAndNew';saveNew.type='button';saveNew.textContent='Save & New';saveNew.className='secondary';$('addItem').insertAdjacentElement('afterend',saveNew);}
+ $('addItem').onclick=()=>commitItem(false);saveNew.onclick=()=>commitItem(true);
+ function commitItem(keep){
+  const name=$('itemName').value.trim(),qty=Number($('qty').value),rate=Number($('rate').value);
+  if(!name||qty<=0||rate<0){alert('Enter item name, valid quantity and rate.');return;}
+  cart.push({name,qty,rate});catalog[name]=catalog[name]||{stock:0,rate};catalog[name].rate=rate;
+  persistAll();$('itemName').value='';$('qty').value=1;$('rate').value=0;draw();drawCatalog();
+  if(!keep){overlay.classList.remove('open');setTimeout(()=>$('cart')?.scrollIntoView({behavior:'smooth',block:'center'}),100);}else $('itemName').focus();
+ }
+ // Customer name suggestions from previously billed customers and ledgers.
+ const cust=$('customer');if(cust){
+  let box=document.getElementById('customerSuggestBox');if(!box){box=document.createElement('div');box.id='customerSuggestBox';box.className='autocomplete-box';cust.insertAdjacentElement('afterend',box);}
+  const customerNames=()=>[...new Set([...invoices.map(b=>b.customer||''),...Object.keys(ledgerData||{})].filter(Boolean))];
+  cust.addEventListener('input',()=>{const val=cust.value.trim().toLowerCase();box.innerHTML='';if(!val)return;
+   const matches=customerNames().filter(n=>n.toLowerCase().includes(val)).sort((a,b)=>(a.toLowerCase().startsWith(val)?0:1)-(b.toLowerCase().startsWith(val)?0:1));
+   matches.slice(0,8).forEach(n=>{const btn=document.createElement('button');btn.type='button';btn.textContent=n;btn.onclick=()=>{cust.value=n;box.innerHTML='';};box.append(btn);});
+  });
+  cust.addEventListener('blur',()=>setTimeout(()=>box.innerHTML='',180));
+ }
+ // Item-name dropdown (mobile-friendly; don't rely only on native datalist).
+ const item=$('itemName');if(item){
+  let box=document.getElementById('itemSuggestBox');if(!box){box=document.createElement('div');box.id='itemSuggestBox';box.className='autocomplete-box';item.insertAdjacentElement('afterend',box);}
+  item.addEventListener('input',()=>{const val=item.value.trim().toLowerCase();box.innerHTML='';if(!val)return;
+   const names=Object.keys(catalog).filter(n=>n.toLowerCase().includes(val)).sort((a,b)=>(a.toLowerCase().startsWith(val)?0:1)-(b.toLowerCase().startsWith(val)?0:1));
+   names.slice(0,8).forEach(n=>{const btn=document.createElement('button');btn.type='button';btn.textContent=n;btn.onclick=()=>{item.value=n;$('rate').value=catalog[n]?.rate||0;box.innerHTML='';};box.append(btn);});
+  });
+  item.addEventListener('blur',()=>setTimeout(()=>box.innerHTML='',180));
+ }
+ // Remove obsolete three-step navigation calls that referred to the deleted stepper.
+ document.querySelectorAll('.app-nav button').forEach(b=>{if(b.dataset.target==='apna-bill-screen')b.onclick=()=>activate(bill);});
+})();
+</script>
+<style id="autocomplete-repair">
+.autocomplete-box{position:relative;z-index:25;background:#fff;border:1px solid #ccd8e4;border-radius:10px;max-height:220px;overflow:auto;margin:2px 0 10px;box-shadow:0 5px 16px #16344d18}
+.autocomplete-box:empty{display:none}.autocomplete-box button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid #edf1f5;background:white;color:#172b43;padding:12px;font-size:15px}
+#itemEntryOverlay #saveItemAndNew,#itemEntryOverlay #addItem{display:block!important;visibility:visible!important;opacity:1!important}
+</style></body></html>
