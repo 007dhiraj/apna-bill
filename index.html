@@ -68,6 +68,15 @@ $('addItem').onclick=()=>{let name=$('itemName').value.trim(),qty=Number($('qty'
 $('save').onclick=()=>{if(!cart.length){alert('Add at least one item first.');return}let b=billObj();invoices.unshift(b);cart.forEach(it=>{catalog[it.name]=catalog[it.name]||{stock:0,rate:it.rate};catalog[it.name].stock=Math.max(0,Number(catalog[it.name].stock||0)-it.qty);catalog[it.name].rate=it.rate});if(b.payment==='Credit'&&b.customer){ledgerData[b.customer]=(Number(ledgerData[b.customer])||0)+b.total}localStorage.setItem(KEY,JSON.stringify(invoices));persistAll();cart=[];$('invoiceNo').value='AB-'+Date.now().toString().slice(-6);draw();render();drawCatalog();preview(b);alert('Bill saved locally. Stock and credit balance updated.')};
 $('recordPurchase').onclick=()=>{let name=$('purchaseItem').value.trim(),q=Number($('purchaseQty').value),rate=Number($('purchaseRate').value);if(!name||q<=0||rate<0){alert('Enter item, quantity and valid purchase rate.');return}catalog[name]=catalog[name]||{stock:0,rate:0};catalog[name].stock=Number(catalog[name].stock||0)+q;catalog[name].purchaseRate=rate;purchases.unshift({item:name,qty:q,rate,supplier:$('supplier').value,date:new Date().toISOString()});persistAll();drawCatalog();alert('Purchase recorded and stock increased.')};
 $('recordPayment').onclick=()=>{let name=$('payCustomer').value.trim(),amount=Number($('payAmount').value);if(!name||amount<=0){alert('Enter customer and positive payment.');return}let due=Number(ledgerData[name]||0);if(!due){alert('No outstanding amount found for this customer.');return}let received=Math.min(amount,due);ledgerData[name]=Math.max(0,due-received);payments.unshift({customer:name,amount:received,date:new Date().toISOString()});persistAll();drawCatalog();$('payAmount').value='';alert('Payment recorded: '+money(received))};
+// Reliable item-add flow for the separated item-entry overlay.
+$('addItem').onclick=()=>{
+ const name=$('itemName').value.trim(),qty=Number($('qty').value),rate=Number($('rate').value);
+ if(!name||qty<=0||rate<0){alert('Enter item, valid quantity and rate.');return}
+ cart.push({name,qty,rate});catalog[name]=catalog[name]||{stock:0,rate};catalog[name].rate=rate;
+ persistAll();$('itemName').value='';$('qty').value=1;$('rate').value=0;draw();drawCatalog();
+ const overlay=document.getElementById('itemEntryOverlay');if(overlay)overlay.classList.remove('open');
+ setTimeout(()=>{const list=document.getElementById('cart');if(list)list.scrollIntoView({behavior:'smooth',block:'center'});},100);
+};
 const oldRender=render;render=function(){oldRender();let outstanding=Object.values(ledgerData).reduce((a,b)=>a+Number(b||0),0);$('billCount').textContent=invoices.length;drawCatalog()};
 $('export').onclick=()=>{let backup={invoices,catalog,ledgerData,payments,purchases};let blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='apna-bill-local-backup.json';a.click();URL.revokeObjectURL(url)};
 drawCatalog();
