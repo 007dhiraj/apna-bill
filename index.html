@@ -70,4 +70,21 @@ document.getElementById('addItem')?.addEventListener('click',()=>setStep(1));
 document.getElementById('save')?.addEventListener('click',()=>{setTimeout(()=>activate(hs),300)});
 activate(home);
 })();
+</script><script>
+(function(){
+ const KEY='apnaBillBusinessProfileV1',q=id=>document.getElementById(id);let profile=JSON.parse(localStorage.getItem(KEY)||'null');
+ const shop=q('shop');if(shop){let l=shop.previousElementSibling;if(l&&l.tagName==='LABEL')l.style.display='none';shop.style.display='none';shop.value=profile?.name||'';}
+ const main=document.querySelector('main'),nav=document.querySelector('.app-nav');
+ const settings=document.createElement('section');settings.className='app-screen';settings.id='apna-settings-screen';
+ settings.innerHTML='<div class="screen-title">Settings</div><div class="subcard"><h2>Business Profile</h2><p class="muted">Set this up once. Details are automatically used on every bill.</p><label>Business / Shop name *</label><input id="profileName" placeholder="Your shop name"><label>Phone</label><input id="profilePhone" inputmode="tel" placeholder="Mobile number"><label>Address</label><input id="profileAddress" placeholder="Shop address"><label>GSTIN (optional)</label><input id="profileGST" placeholder="GST number"><button id="saveProfile">Save business profile</button></div>';
+ main.append(settings);
+ const btn=document.createElement('button');btn.innerHTML='⚙<br>Settings';btn.dataset.target=settings.id;nav.append(btn);
+ function showSettings(){document.querySelectorAll('.app-screen').forEach(s=>s.classList.remove('active'));settings.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===btn));window.scrollTo(0,0);}
+ btn.onclick=showSettings;
+ function fill(){profile=JSON.parse(localStorage.getItem(KEY)||'null');q('profileName').value=profile?.name||'';q('profilePhone').value=profile?.phone||'';q('profileAddress').value=profile?.address||'';q('profileGST').value=profile?.gst||'';}
+ fill();
+ q('saveProfile').onclick=()=>{const name=q('profileName').value.trim();if(!name){alert('Please enter business name.');return;}profile={name,phone:q('profilePhone').value.trim(),address:q('profileAddress').value.trim(),gst:q('profileGST').value.trim()};localStorage.setItem(KEY,JSON.stringify(profile));if(shop)shop.value=name;alert('Business profile saved. Name will automatically appear on new bills.');document.querySelector('[data-target="apna-home-screen"]')?.click();};
+ if(!profile){showSettings();alert('First time only: set up your business profile here. It will not be requested on every bill.');}
+ const preview=q('invoicePreview');if(preview){new MutationObserver(()=>{if(!profile)return;const h=preview.querySelector('.bill-head h2');if(h)h.textContent=profile.name;const left=preview.querySelector('.bill-head>div');if(left){left.querySelectorAll('.profile-extra').forEach(x=>x.remove());let extra=[profile.phone,profile.address,profile.gst?'GSTIN: '+profile.gst:''].filter(Boolean).join(' · ');if(extra){let p=document.createElement('p');p.className='muted profile-extra';p.textContent=extra;left.append(p);}}}).observe(preview,{childList:true,subtree:true});}
+})();
 </script></body></html>
