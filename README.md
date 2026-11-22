@@ -1,9 +1,12 @@
 # Apna Bill
 
-Mobile-first billing and shop-management app project.
+A mobile-first billing and shop-management app prototype. Initial milestone is a browser prototype, not yet a production Android app.
 
-Starter prototype planned: responsive dashboard, invoices, items, customers, discount/GST options, local demo persistence.
+## Planned features
+- Sales and purchase billing, GST/non-GST modes, discounts and extra charges
+- Items, inventory, customer/supplier ledgers and partial payments
+- Expenses, reports, receivables, PDF/share/export
+- Secure OTP sign-in, tenant isolation, cloud sync/backup
+- Multi-language UI and Android APK testing
 
-Production roadmap: ledgers, inventory, purchases, reports, PDF sharing, OTP authentication, cloud sync, multi-tenant isolation, multilingual settings, Android APK.
-
-This repo does not yet contain a production app. Features will be marked complete only after implementation and testing.
+No production security, cloud sync, or APK is claimed until implemented and tested.
