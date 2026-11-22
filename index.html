@@ -175,14 +175,15 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
   persistAll();$('itemName').value='';$('qty').value=1;$('rate').value=0;draw();drawCatalog();
   if(!keep){overlay.classList.remove('open');setTimeout(()=>$('cart')?.scrollIntoView({behavior:'smooth',block:'center'}),100);}else $('itemName').focus();
  }
- // Customer name suggestions from previously billed customers and ledgers.
+ // Customer autocomplete: show saved names above the field while typing or focusing.
  const cust=$('customer');if(cust){
   let box=document.getElementById('customerSuggestBox');if(!box){box=document.createElement('div');box.id='customerSuggestBox';box.className='autocomplete-box';cust.insertAdjacentElement('afterend',box);}
-  const customerNames=()=>[...new Set([...invoices.map(b=>b.customer||''),...Object.keys(ledgerData||{})].filter(Boolean))];
-  cust.addEventListener('input',()=>{const val=cust.value.trim().toLowerCase();box.innerHTML='';if(!val)return;
-   const matches=customerNames().filter(n=>n.toLowerCase().includes(val)).sort((a,b)=>(a.toLowerCase().startsWith(val)?0:1)-(b.toLowerCase().startsWith(val)?0:1));
-   matches.slice(0,8).forEach(n=>{const btn=document.createElement('button');btn.type='button';btn.textContent=n;btn.onclick=()=>{cust.value=n;box.innerHTML='';};box.append(btn);});
-  });
+  const customerNames=()=>[...new Set([...(Array.isArray(invoices)?invoices.map(b=>b.customer||''):[]),...Object.keys(ledgerData||{})].map(n=>String(n).trim()).filter(Boolean))];
+  const showCustomerSuggestions=()=>{const val=cust.value.trim().toLowerCase();box.innerHTML='';
+   const names=customerNames().filter(n=>!val||n.toLowerCase().includes(val)).sort((a,b)=>(a.toLowerCase().startsWith(val)?0:1)-(b.toLowerCase().startsWith(val)?0:1));
+   names.slice(0,8).forEach(n=>{const btn=document.createElement('button');btn.type='button';btn.textContent=n;btn.onclick=()=>{cust.value=n;box.innerHTML='';};box.append(btn);});
+  };
+  cust.addEventListener('input',showCustomerSuggestions);cust.addEventListener('focus',showCustomerSuggestions);
   cust.addEventListener('blur',()=>setTimeout(()=>box.innerHTML='',180));
  }
  // Item-name dropdown (mobile-friendly; don't rely only on native datalist).
