@@ -447,4 +447,36 @@ body[data-theme="dark"]{background:#121923;color:#e6edf5}body[data-theme="dark"]
  const css=document.createElement('style');css.textContent='.history-bill-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border:1px solid #e5edf4;border-radius:12px;background:#fff;margin:8px 0}.history-bill-row>div{display:flex;flex-direction:column;gap:4px}.history-bill-row small{font-size:12px;color:#64758b}.history-bill-row strong{font-size:16px;color:#1768ad}.history-bill-row button{width:auto;min-width:95px;margin:0}@media(max-width:520px){.history-bill-row{padding:9px}.history-bill-row button{min-width:82px}}';document.head.append(css);
  redrawHistory();
 })();
-</script></body></html>
+</script><script id="default-credit-and-partial-payment">
+(function(){
+ const $=id=>document.getElementById(id),money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+ const paymentSelect=$('payment');if(paymentSelect){paymentSelect.value='Credit';const credit=paymentSelect.querySelector('option[value="Credit"]')||[...paymentSelect.options].find(o=>o.text==='Credit');if(credit)credit.selected=true;}
+ const billForm=$('save')?.closest('section');
+ if(billForm&&!$('receiveNowBox')){
+  const box=document.createElement('div');box.id='receiveNowBox';box.className='subcard';box.innerHTML='<label><b>Receive Payment Now (optional)</b></label><input id="receiveNow" type="number" min="0" step="0.01" value="0" placeholder="Received today"><small>If the customer pays part now, enter it here. Remaining amount will stay due.</small>';
+  const totals=$('totals');if(totals)totals.after(box);
+ }
+ const saveBtn=$('save'),oldHandler=saveBtn?.onclick;
+ if(saveBtn){saveBtn.onclick=function(){
+  const receive=Number($('receiveNow')?.value||0),customer=$('customer').value.trim(),estimate=Number((document.querySelector('#totals .total b')?.textContent||'').replace(/[₹,]/g,''))||0;
+  if(receive<0){alert('Payment received cannot be negative.');return}
+  if(receive>estimate){alert('Received amount cannot be more than bill total.');return}
+  if(receive>0&&!customer){alert('Enter customer name to record partial payment.');return}
+  // Always credit sale by default, except when an explicit different mode is selected.
+  if(paymentSelect&&paymentSelect.value==='Credit'){}
+  oldHandler?.();
+  setTimeout(()=>{
+   const b=invoices[0];if(!b||!customer||b.customer!==customer||b.payment!=='Credit'||receive<=0)return;
+   const paid=Math.min(receive,Number(b.total||0));
+   if(!payments.some(p=>p.billId===b.id&&p.initialReceive)){payments.unshift({customer,amount:paid,date:new Date().toISOString(),billId:b.id,initialReceive:true,mode:'Cash'});ledgerData[customer]=Math.max(0,Number(ledgerData[customer]||0)-paid);persistAll();}
+   $('receiveNow').value='0';if(typeof drawParties==='function')drawParties();if(typeof showParty==='function'&&customer)showParty(customer);
+  },180);
+ }}
+ // Make partial collection and due amounts visible in invoice preview and view/statement exports.
+ const originalPreview=window.preview;
+ window.preview=function(b){if(originalPreview)originalPreview(b);const box=$('invoicePreview');if(box&&b){const paid=Number(b.initialReceived||0);if(paid>0){box.insertAdjacentHTML('beforeend','<div class="subcard"><b>Received:</b> '+money(paid)+'<br><b>Balance Due:</b> '+money(Math.max(0,Number(b.total||0)-paid))+'</div>');}}};
+})();
+</script>
+<style id="credit-partial-payment-style">
+#receiveNowBox{margin:10px 0;background:#f0f7ff;border:1px solid #d4e7f8;border-radius:12px;padding:12px}#receiveNowBox input{width:100%}#receiveNowBox small{display:block;color:#5d7187;margin-top:6px}
+</style></body></html>
