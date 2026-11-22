@@ -326,4 +326,68 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
 #vyDrawer{position:fixed;top:0;bottom:0;left:0;width:min(82vw,320px);background:#fff;z-index:50;box-shadow:8px 0 25px #0b223322;transform:translateX(-105%);transition:transform .2s;padding:12px;overflow:auto}#vyDrawer.open{transform:translateX(0)}.vy-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-bottom:1px solid #e6edf3}.vy-drawer-head button{width:40px;background:#eef3f8;color:#25364a}#vyDrawer>button[data-drawtarget]{background:#fff;color:#33475b;border-bottom:1px solid #edf1f5;text-align:left;border-radius:0;padding:14px 10px}
 .vy-row{display:flex;justify-content:space-between;align-items:center;padding:12px 5px;border-bottom:1px solid #edf1f5}.vy-row small{display:block;color:#718096;font-size:11px;margin-top:4px}.vy-row strong{color:#16a578}
 @media(max-width:650px){#apna-home-screen .grid{grid-template-columns:1fr 1fr!important}.vy-metric strong{font-size:18px}#vyBottomActions{bottom:66px}}
-</style></body></html>
+</style><script id="vyapar-settings-and-print-redesign">
+(function(){
+ const $=id=>document.getElementById(id), settings=$('apna-settings-screen'),nav=document.querySelector('.app-nav');
+ if(!settings||!nav)return;
+ const profKey='apnaBillBusinessProfileV1',companiesKey='apnaBillCompaniesV1',printKey='apnaBillPrintOptionsV1';
+ let prof=JSON.parse(localStorage.getItem(profKey)||'null'),companies=JSON.parse(localStorage.getItem(companiesKey)||'[]'),printOpts=JSON.parse(localStorage.getItem(printKey)||'{}');
+ if(prof?.name&&!companies.some(x=>x.name===prof.name))companies.push(prof);
+ localStorage.setItem(companiesKey,JSON.stringify(companies));
+ // Reference-style settings list and subpage navigation
+ settings.innerHTML='<div class="screen-title">Settings</div><div id="settingsList" class="vy-settings-list"></div><div id="settingsDetail"></div>';
+ const list=$('settingsList'),detail=$('settingsDetail');
+ const sections=[
+ ['General','Language, currency, date and security options'],
+ ['Transaction','Bill numbering, transaction defaults and item table'],
+ ['Invoice Print','Regular / Thermal, layout, page and print options'],
+ ['Taxes & GST','GST settings and tax display'],
+ ['User Management','Account access'],
+ ['Transaction SMS','SMS options'],
+ ['Reminders','Payment reminders'],
+ ['Party','Party settings'],
+ ['Item','Item settings'],
+ ['Multi-Currency','Currency options']
+ ];
+ sections.forEach((s,i)=>{let b=document.createElement('button');b.className='vy-setting-row';b.innerHTML='<span><b>'+s[0]+'</b><small>'+s[1]+'</small></span><span>›</span>';b.onclick=()=>openSetting(s[0]);list.append(b)});
+ function openSetting(name){list.style.display='none';detail.innerHTML='<button class="secondary" id="settingBack">← Settings</button><h2 class="vy-detail-title">'+name+'</h2><div id="settingPanel"></div>'; $('settingBack').onclick=()=>{detail.innerHTML='';list.style.display='block'};let panel=$('settingPanel');
+ if(name==='General'){panel.innerHTML='<div class="vy-setting-card"><label>App Language</label><select id="vyLanguage"><option>English</option><option>Hindi</option></select><label>Currency</label><select id="vyCurrency"><option>₹ Indian Rupee (INR)</option></select><label>Decimal Places</label><select id="vyDecimals"><option>2</option><option>0</option><option>1</option></select></div>'}
+ else if(name==='Transaction'){panel.innerHTML='<div class="vy-setting-card"><label>Invoice Number Prefix</label><input id="vyPrefix" value="AB-"><label>Next Invoice Number</label><input id="vyNext" type="number" min="1"><p class="muted">Invoice number increases sequentially after each saved bill.</p><label>Default Payment Type</label><select><option>Cash</option><option>Credit</option><option>UPI</option></select><label>Default Discount</label><input type="number" placeholder="0"></div>'}
+ else if(name==='Invoice Print'){panel.innerHTML='<div class="vy-setting-card"><div class="vy-print-tabs"><button data-printmode="regular">Regular</button><button data-printmode="thermal">Thermal</button></div><label>Bill Design</label><select id="vyBillDesign"><option value="classic">Classic</option><option value="modern">Modern Blue</option><option value="minimal">Minimal</option><option value="compact">Compact</option></select><label>Page Size</label><select id="vyPage"><option>A4</option><option>A5</option><option>Thermal 80mm</option><option>Thermal 58mm</option></select><label>Orientation</label><select id="vyOrient"><option>Portrait</option><option>Landscape</option></select><h3>Print Company Info / Header</h3><div class="vy-toggles" id="vyHeaderToggles"></div><h3>Bill Content</h3><div class="vy-toggles" id="vyBillToggles"></div><h3>Footer</h3><div class="vy-toggles" id="vyFooterToggles"></div><button id="vySavePrint">Save Print Settings</button><button class="secondary" id="vyPrintPreview">Preview Design</button>'; 
+ const options=[['Company Name','company'],['Company Logo','logo'],['Address','address'],['Phone Number','phone'],['Email','email'],['GSTIN','gst'],['Item Quantity','qty'],['Amount with decimals','decimals'],['Received Amount','received'],['Balance Amount','balance'],['Tax Details','tax'],['Amount in words','words'],['Print Description','description'],['Terms & Conditions','terms'],['Signature','signature'],['Payment Mode','payment']];
+ const groups=[['vyHeaderToggles',options.slice(0,6)],['vyBillToggles',options.slice(6,12)],['vyFooterToggles',options.slice(12)]];
+ groups.forEach(([id,opts])=>opts.forEach(([label,key])=>{let row=document.createElement('label');row.className='vy-switch-row';row.innerHTML=label+'<input type="checkbox" data-printkey="'+key+'">';$(id).append(row)}));
+ $('vyBillDesign').value=printOpts.design||'classic';$('vyPage').value=printOpts.page||'A4';$('vyOrient').value=printOpts.orientation||'Portrait';
+ document.querySelectorAll('[data-printkey]').forEach(x=>x.checked=printOpts[x.dataset.printkey]!==false);
+ document.querySelectorAll('[data-printmode]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-printmode]').forEach(x=>x.classList.remove('active'));b.classList.add('active');printOpts.mode=b.dataset.printmode;});
+ $('vySavePrint').onclick=()=>{printOpts.design=$('vyBillDesign').value;printOpts.page=$('vyPage').value;printOpts.orientation=$('vyOrient').value;document.querySelectorAll('[data-printkey]').forEach(x=>printOpts[x.dataset.printkey]=x.checked);localStorage.setItem(printKey,JSON.stringify(printOpts));alert('Print settings saved.')};
+ $('vyPrintPreview').onclick=()=>{if(invoices.length)preview(invoices[0]);else alert('Save a bill first to preview.')};
+ }
+ else panel.innerHTML='<div class="vy-setting-card"><p>'+name+' options will be organized here; settings will not appear on every screen.</p></div>';
+ }
+ // Company name and logo panel placed in app navigation drawer top header.
+ const drawer=$('vyDrawer');
+ if(drawer){let head=drawer.querySelector('.vy-drawer-head');if(head){head.innerHTML='<div class="vy-company-head"><div id="vyLogoBox">🏪</div><div><b id="vyCompanyName">'+(prof?.name||'Your Business')+'</b><small>'+(prof?.email||'Business account')+'</small><button id="vyChangeCompany">Change Company ›</button></div><button id="vyDrawerClose">×</button></div>'; $('vyDrawerClose').onclick=()=>drawer.classList.remove('open');$('vyChangeCompany').onclick=()=>{let names=companies.map(x=>x.name).join('\n');let choice=prompt('Choose company by name or type a new company name:\n'+names,prof?.name||'');if(!choice)return;let existing=companies.find(x=>x.name.toLowerCase()===choice.toLowerCase());if(existing){prof=existing}else{prof={name:choice,phone:'',address:'',gst:'',logo:''};companies.push(prof);}localStorage.setItem(profKey,JSON.stringify(prof));localStorage.setItem(companiesKey,JSON.stringify(companies));$('vyCompanyName').textContent=prof.name;let shop=$('shop');if(shop)shop.value=prof.name;alert('Company changed to '+prof.name+'.');};if(prof?.logo)$('vyLogoBox').innerHTML='<img src="'+prof.logo+'" alt="Logo">';}}
+ // Business profile details move into a separate General subpage rather than repeating on screens.
+ const settingsBtn=nav.querySelector('[data-target="apna-settings-screen"]');if(settingsBtn)settingsBtn.onclick=()=>{document.querySelectorAll('.app-screen').forEach(s=>s.classList.remove('active'));settings.classList.add('active');nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b===settingsBtn));list.style.display='block';detail.innerHTML='';window.scrollTo(0,0)};
+ // Style selected bill template at print time.
+ window.apnaBillPrintOptions=printOpts;
+})();
+</script>
+<style id="vy-settings-print-style">
+#apna-settings-screen .vy-settings-list{background:white;border-radius:14px;overflow:hidden}
+.vy-setting-row{display:flex;align-items:center;justify-content:space-between;text-align:left;background:white;color:#304456;border-bottom:1px solid #e8eef4;border-radius:0;margin:0;padding:14px;width:100%}
+.vy-setting-row small{display:block;font-size:12px;color:#718197;margin-top:3px;font-weight:400}.vy-setting-row span:last-child{font-size:24px;color:#8393a5}
+.vy-detail-title{padding:14px 3px}.vy-setting-card{background:white;border-radius:14px;padding:14px;margin-bottom:12px}.vy-setting-card label{margin-top:8px}
+.vy-print-tabs{display:flex;gap:8px}.vy-print-tabs button{flex:1}.vy-print-tabs button.active{background:#0c7fa9}
+.vy-switch-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #edf1f5}.vy-switch-row input{width:auto;transform:scale(1.15);margin:0}
+.vy-company-head{background:#1475c8;color:white;display:flex;gap:10px;align-items:center;padding:12px 8px;width:100%}.vy-company-head #vyLogoBox{width:52px;height:52px;border-radius:50%;background:white;color:#135d9c;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:25px}.vy-company-head img{width:100%;height:100%;object-fit:contain}.vy-company-head b{display:block;max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vy-company-head small{display:block;color:#e2f2ff;font-size:12px}.vy-company-head button{width:auto;margin:4px 0 0;padding:5px 8px;background:transparent;color:white;text-align:left;border:1px solid #ffffff66;font-size:12px}.vy-company-head button#vyDrawerClose{margin-left:auto;align-self:flex-start;border:0;font-size:20px}
+@media print{body.print-thermal{width:80mm}body.print-minimal #invoicePreview{border:0!important}body.print-modern #invoicePreview{font-family:Arial!important;color:#144c7e!important}body.print-compact #invoicePreview{font-size:11px!important}body.print-modern .bill-head{background:#e8f3ff;padding:12px;border-bottom:2px solid #1976b9}body.print-modern table th{background:#dceeff!important}body.print-classic #invoicePreview{border:1px solid #222!important;padding:15px}body.print-thermal #invoicePreview{width:80mm!important;font-size:12px!important}body.print-thermal table{font-size:11px!important}}
+</style>
+<script>
+(function(){
+ // Save the original preview and add layout class plus optional company information.
+ const origPreview=window.preview;
+ if(typeof origPreview==='function'){window.preview=function(b){origPreview(b);const p=document.getElementById('invoicePreview');if(p){let o=JSON.parse(localStorage.getItem('apnaBillPrintOptionsV1')||'{}');p.classList.remove('print-classic','print-modern','print-minimal','print-compact');p.classList.add('print-'+(o.design||'classic'));}}}
+})();
+</script></body></html>
