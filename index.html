@@ -221,7 +221,7 @@ if(settingsScreen){const box=settingsScreen.querySelector('.subcard');if(box){le
  function drawParties(filter=''){const list=allParties().filter(n=>n.toLowerCase().includes(filter.toLowerCase()));$('partyList').innerHTML=list.map(n=>'<button class="party-list-row" data-party="'+encodeURIComponent(n)+'"><span>'+escx(n)+'</span><b>'+money(Math.max(0,balanceFor(n)))+'</b></button>').join('')||'<p class="muted">Saved customers will appear here after their bills are saved.</p>';document.querySelectorAll('[data-party]').forEach(b=>b.onclick=()=>showParty(decodeURIComponent(b.dataset.party)));}
  $('partySearch').oninput=()=>drawParties($('partySearch').value);drawParties();
  const oldSave=$('save').onclick;
- $('save').onclick=()=>{oldSave?.();setTimeout(()=>{drawParties();if($('customer').value.trim())showParty($('customer').value.trim());},150)};
+ $('save').onclick=()=>{const before=invoices.length;oldSave?.();setTimeout(()=>{if(invoices.length>before){const b=invoices[0];if(b.payment==='Credit'&&b.customer){ledgerData[b.customer]=Number(ledgerData[b.customer]||0)+Number(b.total||0);persistAll();}}drawParties();if($('customer').value.trim())showParty($('customer').value.trim());},150)};
  const oldPayment=$('recordPayment').onclick;
  $('recordPayment').onclick=()=>{oldPayment?.();setTimeout(()=>drawParties(),100)};
 })();
